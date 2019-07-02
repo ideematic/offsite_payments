@@ -79,9 +79,9 @@ module OffsitePayments #:nodoc:
         mapping :account, 'x_login'
 
         mapping :customer, :first_name => 'x_first_name',
-                           :last_name  => 'x_last_name',
-                           :email      => 'x_email',
-                           :phone      => 'x_phone'
+                :last_name  => 'x_last_name',
+                :email      => 'x_email',
+                :phone      => 'x_phone'
 
         mapping :notify_url, 'x_relay_url'
         mapping :return_url, '' # unused
@@ -312,11 +312,11 @@ module OffsitePayments #:nodoc:
         end
 
         def po_num
-         unescape params['x_po_num']
+          unescape params['x_po_num']
         end
 
         def ship_to_address
-         all = {}
+          all = {}
           [:city, :last_name, :first_name, :country, :zip, :address].each do |key_out|
             all[key_out] = unescape params['x_ship_to_' + key_out.to_s]
           end
@@ -533,7 +533,7 @@ module OffsitePayments #:nodoc:
 
         # md5 hash used internally
         def security_key
-          params['x_MD5_Hash']
+          params['x_SHA2_Hash']
         end
 
         # The money amount we received in X.2 decimal. Returns a string
@@ -560,11 +560,24 @@ module OffsitePayments #:nodoc:
         #
         # Note this is somewhat unsafe unless you actually set that md5 hash
         # to something (defaults to '' in their system).
-        def acknowledge(md5_hash_set_in_authorize_net, authorize_net_login_name)
-          Digest::MD5.hexdigest(md5_hash_set_in_authorize_net + authorize_net_login_name + params['x_trans_id'] + gross) == params['x_MD5_Hash'].downcase
+        def acknowledge(signature_key_set_in_authorize_net, authorize_net_login_name)
+          digest = OpenSSL::Digest.new('sha512')
+          OpenSSL::HMAC.hexdigest(digest, [signature_key_set_in_authorize_net].pack('H*'), generate_hash).upcase == params['x_SHA2_Hash'].upcase
+          #Digest::MD5.hexdigest(md5_hash_set_in_authorize_net + authorize_net_login_name + params['x_trans_id'] + gross) == params['x_MD5_Hash'].downcase
         end
 
-       private
+        private
+
+        def generate_hash
+          hash = ['x_trans_id', 'x_test_request', 'x_response_code', 'x_auth_code', 'x_cvv2_resp_code',
+                  'x_cavv_response', 'x_avs_code', 'x_method', 'x_account_number', 'x_amount', 'x_company',
+                  'x_first_name', 'x_last_name', 'x_address', 'x_city', 'x_state', 'x_zip', 'x_country',
+                  'x_phone', 'x_fax', 'x_email', 'x_ship_to_company', 'x_ship_to_first_name', 'x_ship_to_last_name',
+                  'x_ship_to_address', 'x_ship_to_city', 'x_ship_to_state', 'x_ship_to_zip', 'x_ship_to_country', 'x_invoice_num'].map do |key|
+            params[key] || ''
+          end
+          "^#{hash.join('^')}^"
+        end
 
         # Take the posted data and move the relevant data into a hash.
         def parse(post)
