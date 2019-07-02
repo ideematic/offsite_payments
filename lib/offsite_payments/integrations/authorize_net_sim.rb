@@ -563,7 +563,6 @@ module OffsitePayments #:nodoc:
         def acknowledge(signature_key_set_in_authorize_net, authorize_net_login_name)
           digest = OpenSSL::Digest.new('sha512')
           OpenSSL::HMAC.hexdigest(digest, [signature_key_set_in_authorize_net].pack('H*'), generate_hash).upcase == params['x_SHA2_Hash'].upcase
-          #Digest::MD5.hexdigest(md5_hash_set_in_authorize_net + authorize_net_login_name + params['x_trans_id'] + gross) == params['x_MD5_Hash'].downcase
         end
 
         private
@@ -574,7 +573,11 @@ module OffsitePayments #:nodoc:
                   'x_first_name', 'x_last_name', 'x_address', 'x_city', 'x_state', 'x_zip', 'x_country',
                   'x_phone', 'x_fax', 'x_email', 'x_ship_to_company', 'x_ship_to_first_name', 'x_ship_to_last_name',
                   'x_ship_to_address', 'x_ship_to_city', 'x_ship_to_state', 'x_ship_to_zip', 'x_ship_to_country', 'x_invoice_num'].map do |key|
-            params[key] || ''
+            if params[:key]
+              unescape(params[key])
+            else
+              ''
+            end
           end
           "^#{hash.join('^')}^"
         end
