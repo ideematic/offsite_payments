@@ -562,6 +562,7 @@ module OffsitePayments #:nodoc:
         # to something (defaults to '' in their system).
         def acknowledge(signature_key_set_in_authorize_net, authorize_net_login_name)
           digest = OpenSSL::Digest.new('sha512')
+          Rails.logger.info signature_key_set_in_authorize_net
           Rails.logger.info params.inspect
           Rails.logger.info generate_hash
           Rails.logger.info OpenSSL::HMAC.hexdigest(digest, [signature_key_set_in_authorize_net].pack('H*'), generate_hash).upcase
