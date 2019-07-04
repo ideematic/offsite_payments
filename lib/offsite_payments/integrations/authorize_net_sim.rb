@@ -578,11 +578,7 @@ module OffsitePayments #:nodoc:
                   'x_first_name', 'x_last_name', 'x_address', 'x_city', 'x_state', 'x_zip', 'x_country',
                   'x_phone', 'x_fax', 'x_email', 'x_ship_to_company', 'x_ship_to_first_name', 'x_ship_to_last_name',
                   'x_ship_to_address', 'x_ship_to_city', 'x_ship_to_state', 'x_ship_to_zip', 'x_ship_to_country', 'x_invoice_num'].map do |key|
-            if params[key]
-              unescape(params[key].force_encoding('cp1252').encode('utf-8'))
-            else
-              ''
-            end
+            params[key] || ''
           end
           Rails.logger.info hash
           "^#{hash.join('^')}^"
@@ -593,7 +589,7 @@ module OffsitePayments #:nodoc:
           @raw = post
           post.split('&').each do |line|
             key, value = *line.scan( %r{^(\w+)\=(.*)$} ).flatten
-            params[key] = value
+            params[key] = unescape(value).force_encoding('cp1252').encode('utf-8')
           end
         end
       end
